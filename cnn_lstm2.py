@@ -15,7 +15,7 @@ from keras.optimizers import Adam
 window=5
 lstm_units = 16
 dropout = 0.01
-epoch=600#60
+epoch=400#60
 #读取数据
 df1=pd.read_csv('data1.csv')
 df1=df1.iloc[:,2:]
@@ -24,6 +24,27 @@ df1.tail()
 
 #进行数据归一化
 from sklearn import preprocessing
+#min_max_scaler = preprocessing.MinMaxScaler()
+#df0=min_max_scaler.fit_transform(df1)
+df = pd.DataFrame(df1, columns=df1.columns)
+input_size=len(df.iloc[1,:])
+
+
+#构建lstm输入
+seq_len=window
+
+stock=df
+amount_of_features = len(stock.columns)#有几列
+data=stock.iloc[:,:].values
+sequence_length = seq_len + 1#序列长度
+
+r1 = []
+for index in range(sequence_length,len(data)):#循环数据长度-sequence_length次
+    r1.append([data[index][3]])#第i行到i+sequence_length
+r1 = np.array(r1)#得到样本，样本形式为6天*3特征
+
+
+####第二次重置
 min_max_scaler = preprocessing.MinMaxScaler()
 df0=min_max_scaler.fit_transform(df1)
 df = pd.DataFrame(df0, columns=df1.columns)
@@ -36,17 +57,7 @@ seq_len=window
 stock=df
 amount_of_features = len(stock.columns)#有几列
 data=stock.iloc[:,:].values
-#print(data)
-
 sequence_length = seq_len + 1#序列长度
-'''
-r1 = []
-for index in range(sequence_length,len(data)):#循环数据长度-sequence_length次
-    r1.append([data[index][3]])#第i行到i+sequence_length
-r1 = np.array(r1)#得到样本，样本形式为6天*3特征
-#print(r1)
-#assert 1==0
-'''
 '''
 min1 = preprocessing.MinMaxScaler()
 df0=min1.fit_transform(df1)
@@ -64,8 +75,8 @@ result = np.array(result)#得到样本，样本形式为6天*3特征
 
 
 
-# min2 = preprocessing.MinMaxScaler()
-# r1=min2.fit_transform(r1)
+min2 = preprocessing.MinMaxScaler()
+r1=min2.fit_transform(r1)
 
 
 row = round(0.7 * result.shape[0])#划分训练集测试集
@@ -81,8 +92,7 @@ y_all=np.concatenate((y_train,y_test),axis=0)
 #reshape成 6天*3特征
 X_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], amount_of_features))
 X_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], amount_of_features))
-#print(X_train.shape)
-#assert 1==0
+
 X_all = np.reshape(x_all, (x_all.shape[0], x_all.shape[1], amount_of_features))
 
 
@@ -118,8 +128,8 @@ plt.show()
 
 #在训练集上的拟合结果
 y_train_predict=model.predict(X_train)
-#y_train_predict=min2.inverse_transform(y_train_predict)
-#y_train=min2.inverse_transform(y_train)
+y_train_predict=min2.inverse_transform(y_train_predict)
+y_train=min2.inverse_transform(y_train.reshape(-1,1))
 #print(y_train_predict.shape)
 #assert 1==0
 #y_train_predict=min_max_scaler.inverse_transform(y_train_predict)
@@ -135,8 +145,8 @@ plt.legend(['real','predict'])
 
 
 y_test_predict=model.predict(X_test)
-#y_test=min2.inverse_transform(y_test)
-#y_test_predict=min2.inverse_transform(y_test_predict)
+y_test_predict=min2.inverse_transform(y_test_predict)
+y_test=min2.inverse_transform(y_test.reshape(-1,1))
 y_test_predict=y_test_predict.squeeze(1)
 plt.plot([i+len(y_train_predict) for i in range(len(y_test_predict))],y_test_predict,label='predict')
 plt.plot([i+len(y_train_predict) for i in range(len(y_test_predict))],y_test,label='real')
@@ -146,13 +156,15 @@ plt.vlines(len(y_train_predict), 0, 1, colors="g", linestyles="dashed")
 plt.show()
 
 y_all_predict=model.predict(X_all)
-#y_test=min2.inverse_transform(y_test)
+#y1=y_all_predict
+y_all_predict=min2.inverse_transform(y_all_predict)
+y_all=min2.inverse_transform(y_all.reshape(-1,1))
 #y_test_predict=min2.inverse_transform(y_test_predict)
 y_all_predict=y_all_predict.squeeze(1)
 plt.plot([i for i in range(len(y_all_predict))],y_all_predict,label='predict')
 plt.plot([i for i in range(len(y_all_predict))],y_all,label='real')
 plt.legend(['real','predict'])
-plt.vlines(len(y_train_predict), 0, 1, colors="g", linestyles="dashed")
+plt.vlines(len(y_train_predict), 0, 70000, colors="g", linestyles="dashed")
 #plt.title("Test Data",fontsize='30') #添加标题
 plt.show()
 '''
@@ -194,5 +206,27 @@ print(up_down_accuracy(y_train_predict,y_train))
 print('测试集上的MAE/MSE/MAPE/涨跌准确率')
 print(mean_absolute_error(y_test_predict, y_test))
 print(mean_squared_error(y_test_predict, y_test) )
+mse=mean_squared_error(y_test_predict, y_test)
+mn=y_test.mean()
+'''
+tmp=0
+for i in y_test.reshape(-1):
+    tmp+=(i-mn)*(i-mn)
+rfang=1-float(mse)/tmp
+'''
+y1=y_test.reshape(-1)
+y2=y_test_predict.reshape(-1)
+t1=0
+t2=0
+for i in range(len(y1)):
+    t1+=(y1[i]-y2[i])*(y1[i]-y2[i])
+    t2+=(y1[i]-mn)*(y1[i]-mn)
+print(t1/len(y1))
+rfang=1-float(t1)/t2
+print(rfang)
+#print(y_test.shape,y_test_predict.shape)
+#print(mn)
+#print(rfang)
+print(y_test.shape)
 print(mape(y_test_predict,  y_test) )
 print(up_down_accuracy(y_test_predict,y_test))
