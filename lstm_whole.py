@@ -8,7 +8,7 @@ from torch import nn
 import initial_data
 
 DAYS_FOR_TRAIN = 5
-EPOCHS = 300#500#2000
+EPOCHS = 600#500#2000
 import torch.functional as F
 
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     plt.plot([i + train_size for i in range(len(test_x))], actual_pred_y[-len(test_y):], label='prediction')
     # plt.plot(test_y, 'b', label='real')
     # plt.plot((train_size, len(test_y)), (0, 1), 'g--')  # 分割线 左边是训练数据 右边是测试数据的输出
-    plt.vlines(train_size, 0, 60000, 'g', linestyles="dashed")
+    plt.vlines(train_size, 0, 10000, 'g', linestyles="dashed")
     plt.legend(loc='best')
     # plt.savefig('result.png', format='png', dpi=200)
     plt.show()

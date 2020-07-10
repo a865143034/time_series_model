@@ -2,7 +2,7 @@
 import xlrd
 import numpy as np
 def input_():
-    data = xlrd.open_workbook('usa_2_data.xlsx')
+    data = xlrd.open_workbook('china_data_1.xlsx')
     data.sheet_names()
     # print("sheets：" + str(data.sheet_names()))
     table = data.sheet_by_name('Sheet1')
